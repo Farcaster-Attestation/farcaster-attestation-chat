@@ -11,19 +11,11 @@ import { useFarcasterProfile } from "~/hooks/useFarcasterProfile";
 import { farcasterAttest } from "@farcaster-attestation/sdk";
 import EASABI from "~/abi/EASABI";
 import { encodeAbiParameters, parseAbiParameters } from "viem";
+import { CHAT_SCHEMA, fetchChatMessages } from "~/utils/eas";
+import type { Message } from "~/types/chat";
 
 // EAS Contract Configuration
 const EAS_CONTRACT_ADDRESS = "0x4200000000000000000000000000000000000021"; // Optimism EAS contract
-const CHAT_SCHEMA =
-  "0x6641ef80bc4b45de061916e2df89b67fbd7cef462b7b9430825740c89721268f";
-
-interface Message {
-  id: string;
-  content: string;
-  sender: string;
-  timestamp: Date;
-  attestationId?: string;
-}
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -40,6 +32,13 @@ export default function Chat() {
   const walletClient = useWalletClient();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
+
+  useEffect(() => {
+    fetchChatMessages().then((messages) => {
+      setMessages(messages);
+      console.log(messages);
+    });
+  }, []);
 
   useEffect(() => {
     if (!address || !isConnected || !profile) {
@@ -63,7 +62,8 @@ export default function Chat() {
 
     const { scrollTop } = messagesContainerRef.current;
     if (scrollTop === 0) {
-      loadMoreMessages();
+      // Disable for now
+      // loadMoreMessages();
     }
   };
 
@@ -80,12 +80,16 @@ export default function Chat() {
         id: Date.now().toString(),
         content: "This is a dummy message from the past",
         sender: "Other User",
+        pfpUrl: "/dummy-avatar.jpg",
+        attester: "0x1234567890123456789012345678901234567890",
         timestamp: new Date(Date.now() - 1000000),
       },
       {
         id: (Date.now() + 1).toString(),
         content: "Another dummy message",
         sender: "You",
+        pfpUrl: "/dummy-avatar.jpg",
+        attester: "0x1234567890123456789012345678901234567890",
         timestamp: new Date(Date.now() - 900000),
       },
     ];
@@ -97,7 +101,7 @@ export default function Chat() {
   const handleAttestMessage = async (message: string) => {
     try {
       // First, attest with Farcaster
-      const hash = await farcasterAttest({
+      await farcasterAttest({
         fid: BigInt(profile?.fid ?? 0),
         walletAddress: address,
         walletClient: walletClient as any,
@@ -123,7 +127,7 @@ export default function Chat() {
         value: 0n,
       };
 
-      const attestationId = await writeContractAsync({
+      const hash = await writeContractAsync({
         address: EAS_CONTRACT_ADDRESS as `0x${string}`,
         abi: EASABI,
         functionName: "attest",
@@ -135,26 +139,32 @@ export default function Chat() {
         ],
       });
 
-      console.log("EAS Attestation created:", attestationId);
-
       const userMessage: Message = {
         id: Date.now().toString(),
         content: message,
         sender: "You",
+        attester: address as `0x${string}`,
         timestamp: new Date(),
-        attestationId: attestationId,
+        pfpUrl: profile?.pfpUrl ?? "/dummy-avatar.jpg",
       };
 
-      const otherUserMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: `Response to: ${message}`,
-        sender: "Other User",
-        timestamp: new Date(),
-      };
+      // const otherUserMessage: Message = {
+      //   id: (Date.now() + 1).toString(),
+      //   content: `Response to: ${message}`,
+      //   sender: "Other User",
+      //   timestamp: new Date(),
+      // };
 
       setIsAddingNewMessage(true);
-      setMessages((prev) => [...prev, userMessage, otherUserMessage]);
+      setMessages((prev) => [...prev, userMessage]);
       setNewMessage("");
+
+      await publicClient?.waitForTransactionReceipt({
+        hash,
+        pollingInterval: 1000,
+      });
+
+      console.log("EAS Attestation created");
     } catch (error) {
       console.error("Error creating attestation:", error);
       // You might want to show an error message to the user here
