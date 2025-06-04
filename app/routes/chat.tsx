@@ -32,7 +32,7 @@ export default function Chat() {
   const [isAddingNewMessage, setIsAddingNewMessage] = useState(false);
   const [isWaitingForMessage, setIsWaitingForMessage] = useState(false);
 
-  const walletClient = useWalletClient();
+  const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
 
