@@ -5,7 +5,7 @@ export async function getFarcasterProfile(
   fid: number
 ): Promise<FarcasterProfile> {
   const response = await axios.get(
-    `https://hub.pinata.cloud/v1/userDataByFid?fid=${fid}`
+    `https://farcaster-attestation.upnode.org/v1/userDataByFid?fid=${fid}`
   );
 
   const pfpUrl =

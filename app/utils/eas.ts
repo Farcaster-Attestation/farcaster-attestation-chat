@@ -74,6 +74,7 @@ export async function fetchChatMessages() {
         pfpUrl: profile.pfpUrl,
         timestamp: new Date(attestation.time * 1000),
         attester: attestation.attester,
+        attestationId: attestation.id,
       });
     }
 
