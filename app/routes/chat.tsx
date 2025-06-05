@@ -318,8 +318,6 @@ export default function Chat() {
                 )}
                 {message.attester !== address && (
                   <div className="text-xs text-gray-400 flex flex-col">
-                    <div>{message.timestamp.toLocaleDateString()}</div>
-                    <div>{message.timestamp.toLocaleTimeString()}</div>
                     {message.attestationId && (
                       <a
                         href={`https://optimism.easscan.org/attestation/view/${message.attestationId}`}
@@ -344,6 +342,8 @@ export default function Chat() {
                         <span>View on EAS</span>
                       </a>
                     )}
+                    <div>{message.timestamp.toLocaleDateString()}</div>
+                    <div>{message.timestamp.toLocaleTimeString()}</div>
                   </div>
                 )}
               </div>
